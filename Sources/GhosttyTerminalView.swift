@@ -2446,6 +2446,21 @@ final class TerminalSurface: Identifiable, ObservableObject {
                 }
 
                 env["ZDOTDIR"] = integrationDir
+            } else if shellName == "bash" {
+                // For bash, Ghostty injects its integration via GHOSTTY_BASH_INJECT
+                // which sets ENV and launches bash in POSIX mode. Ghostty's ghostty.bash
+                // sources ~/.bashrc then installs its own PROMPT_COMMAND hooks.
+                //
+                // We cannot reliably override GHOSTTY_BASH_RCFILE because libghostty
+                // sets it internally before our env additions are visible to the injection.
+                //
+                // Instead, store the integration path and add a one-shot loader to
+                // the user's .bashrc processing. The loader checks for the pending
+                // marker and sources the integration on first interactive prompt.
+                let bashInteg = integrationDir + "/cmux-bash-integration.bash"
+                if FileManager.default.fileExists(atPath: bashInteg) {
+                    env["CMUX_BASH_INTEGRATION_PENDING"] = bashInteg
+                }
             }
         }
 
